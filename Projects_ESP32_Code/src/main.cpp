@@ -25,7 +25,6 @@ const int zeroButtonPin = 0;
 float counts_per_rot = 100;
 float stallTorque = 0.004;  // N-m, known stall torque for torque-PWM conversion
 float pwm_offset = 100;     // Default PWM offset, this will be converted to a torque offset
-float torque_offset;        // Torque equivalent of the PWM offset
 float pendulum_m = 0.0031;  // kg
 float pendulum_J = 0.000022;
 float pendulum_L = 0.064;   // length in meters
@@ -42,7 +41,7 @@ float tt_sec_last = 0;
 float theta_dot = 0;  // Angular velocity
 
 // PID variables for angular position
-float Kp = 0.0, Ki = 0.0, Kd = 0.0;  // PID gains for angle control
+float Kp = 0.0000003, Ki = 0.00000001, Kd = 0.00001;  // PID gains for angle control
 float integral = 0;
 float previous_error = 0;
 float desired_angle = 45.0;  // Desired angle in degrees
@@ -171,7 +170,7 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
 // Function to compute PWM from torque
 long int computePWMFromTorque(float torque) {
   // Convert torque to PWM, accounting for the torque offset from the PWM offset
-  long int pwm_output = (torque + torque_offset) / stallTorque * 255.0;
+  long int pwm_output = (torque / stallTorque * 255.0) + pwm_offset;
 
   // Ensure the PWM output is within bounds
   pwm_output = constrain(pwm_output, -max_pwm, max_pwm);
@@ -197,9 +196,6 @@ void setup() {
 
   // Output initial encoder state
   Serial.println("Encoder Start = " + String((int32_t)encoder.getCount()));
-
-  // Convert the PWM offset to torque
-  torque_offset = pwm_offset / 255.0 * stallTorque;  // Convert PWM offset to torque
 }
 
 void loop() {
