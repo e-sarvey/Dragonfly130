@@ -8,7 +8,7 @@
 ESP32Encoder encoder;
 unsigned long myTime;
 unsigned long myTime2;
-long int dutyCycle = 0;
+int8_t dutyCycle = 0;
 char myData[50];   // Array to hold received string
 long int position = 0;
 long int reference = 0;
@@ -25,23 +25,23 @@ const int zeroButtonPin = 0;
 float counts_per_rot = 100;
 float stallTorque = 0.004;  // N-m, known stall torque for torque-PWM conversion
 float pwm_offset = 100;     // Default PWM offset, this will be converted to a torque offset
-float pendulum_m = 0.0031;  // kg
-float pendulum_J = 0.000022;
-float pendulum_L = 0.064;   // length in meters
-float pendulum_B = 0.001;
-float pendulum_K = 0.001;
+//float pendulum_m = 0.0031;  // kg
+//float pendulum_J = 0.000022;
+//float pendulum_L = 0.064;   // length in meters
+//float pendulum_B = 0.001;
+//float pendulum_K = 0.001;
 
 float torque = 0;
 float angle_rad = 0;
 float Ts = 0; 
-float corner_freq = 100; // filter cutoff
+float corner_freq = 50; // filter cutoff
 float angle_rad_prev = 0;
 float tt_sec = 0;
 float tt_sec_last = 0;
 float theta_dot = 0;  // Angular velocity
 
 // PID variables for angular position
-float Kp = 0.0000003, Ki = 0.00000001, Kd = 0.00001;  // PID gains for angle control
+float Kp = 0.0, Ki = 0.0, Kd = 0.0;  // PID gains for angle control
 float integral = 0;
 float previous_error = 0;
 float desired_angle = 45.0;  // Desired angle in degrees
@@ -129,7 +129,7 @@ void getAngleAndVelocityFilt() {
 
 // Function to estimate torque based on PWM and stall torque
 void estimateTorque() {
-  torque = stallTorque * ((float)dutyCycle / 255.0);
+  torque = stallTorque * (dutyCycle / 255.0);
 }
 
 // Function to zero the encoder when the button is pressed
@@ -170,7 +170,7 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
 // Function to compute PWM from torque
 long int computePWMFromTorque(float torque) {
   // Convert torque to PWM, accounting for the torque offset from the PWM offset
-  long int pwm_output = (torque / stallTorque * 255.0) + pwm_offset;
+  long int pwm_output = ((torque / stallTorque) * 255.0);
 
   // Ensure the PWM output is within bounds
   pwm_output = constrain(pwm_output, -max_pwm, max_pwm);
