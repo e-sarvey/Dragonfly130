@@ -22,7 +22,7 @@ const int Bin2_pin = 2;
 const int zeroButtonPin = 0;
 
 // System parameters
-float counts_per_rot = 100;
+float counts_per_rot = 400;
 float stallTorque = 0.004;  // N-m, known stall torque for torque-PWM conversion
 float pwm_offset = 100;     // Default PWM offset, this will be converted to a torque offset
 //float pendulum_m = 0.0031;  // kg
@@ -113,7 +113,7 @@ void controlMotor(long int dutyCycle) {
 void getAngleAndVelocityFilt() {
   position = (int32_t)encoder.getCount();
   float angle_rad_raw = 2.0 * 3.1416 * position / counts_per_rot;
-  tt_sec = (millis()) / 1000.0;  // Convert to seconds
+  tt_sec = (micros()) / 1e6;  // Convert to seconds
   Ts = tt_sec - tt_sec_last;     // Calculate sample time
 
   if (Ts > 0) {
@@ -123,6 +123,8 @@ void getAngleAndVelocityFilt() {
     theta_dot = (angle_rad - angle_rad_prev) / Ts;
     // Update previous angle for the next iteration
     angle_rad_prev = angle_rad;
+  } else if (Ts == 0 ){
+    Serial.println("CHANGE IS TIME IS 0. BAD!!");
   }
   tt_sec_last = tt_sec;
 }
@@ -171,7 +173,6 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
 long int computePWMFromTorque(float torque) {
   // Convert torque to PWM, accounting for the torque offset from the PWM offset
   long int pwm_output = ((torque / stallTorque) * 255.0);
-
   // Ensure the PWM output is within bounds
   pwm_output = constrain(pwm_output, -max_pwm, max_pwm);
 
@@ -190,7 +191,7 @@ void setup() {
   // Enable weak pull-up resistors for the encoder
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
   // Attach encoder to pins
-  encoder.attachHalfQuad(19, 18);
+  encoder.attachFullQuad(19, 18);
   // Set starting count value
   encoder.setCount(0);
 
@@ -208,8 +209,7 @@ void loop() {
   
   // Compute the PWM value from the desired torque
   dutyCycle = computePWMFromTorque(desired_torque);
-  
   controlMotor(dutyCycle);          // Control motor based on the updated duty cycle
   SerialComm();                     // Handle serial communication and update the outputs
-  delayMicroseconds(1);             // Short delay to avoid overwhelming serial communication
+  delayMicroseconds(100000);             // Short delay to avoid overwhelming serial communication
 }
