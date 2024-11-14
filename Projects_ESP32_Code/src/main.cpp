@@ -35,7 +35,7 @@ float tt_sec_last = 0;
 float theta_dot = 0;
 
 // PID variables for angular position
-float Kp = 1.0, Ki = 0.0, Kd = 0.0;
+float Kp = 1.0, Ki = 0.1, Kd = 0.0;
 float integral = 0;
 float previous_error = 0;
 float desired_angle = 45.0;
