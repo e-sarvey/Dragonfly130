@@ -71,11 +71,11 @@ long int SerialComm() {
   // Serial Plotter Mode with new syntax
   Serial.print(">");
   Serial.print("position:"); Serial.print(position);
-  Serial.print(",angle:"); Serial.print(angle_rad * (180 / 3.1416));  // Convert radians to degrees
-  Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
-  Serial.print(",torque:"); Serial.print(torque);
+  //Serial.print(",angle:"); Serial.print(angle_rad * (180 / 3.1416));  // Convert radians to degrees
+  // Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
+  // Serial.print(",torque:"); Serial.print(torque);
   Serial.print(",pwm:"); Serial.print(dutyCycle);
-  Serial.print(",Sample Time:"); Serial.print(Ts);
+  // Serial.print(",Sample Time:"); Serial.print(Ts);
   Serial.print(",Error:"); Serial.print(error);
   Serial.println("\r");
 
