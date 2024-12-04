@@ -24,7 +24,7 @@ const int zeroButtonPin = 0;
 // System parameters
 float counts_per_rot = 400;
 float stallTorque = 0.004*(9/5);
-float pwm_offset = 100;
+float pwm_offset = 40; // the default PWM to reach 45 degrees
 float torque = 0;
 float angle_rad = 0;
 float Ts = 0; 
@@ -35,7 +35,7 @@ float tt_sec_last = 0;
 float theta_dot = 0;
 
 // PID variables for angular position
-float Kp = 1.0, Ki = 0.1, Kd = 0.0;
+float Kp = 1e-6, Ki = 0.0, Kd = 1e-7;
 float integral = 0;
 float previous_error = 0;
 float desired_angle = 45.0;
@@ -70,6 +70,7 @@ long int SerialComm() {
   Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
   Serial.print(",torque:"); Serial.print(torque);
   Serial.print(",pwm:"); Serial.print(dutyCycle);
+  Serial.print("Sample Time:"); Serial.print(Ts);
   Serial.println("\r");
 
   if (Serial.available() != 0) {
@@ -111,7 +112,7 @@ void getAngleAndVelocityFilt() {
     theta_dot = (angle_rad - angle_rad_prev) / Ts;
     angle_rad_prev = angle_rad;
   } else if (Ts == 0 ){
-    Serial.println("CHANGE IS TIME IS 0. BAD!!");
+    Serial.println("CHANGE IN TIME IS 0. BAD!!");
   }
   tt_sec_last = tt_sec;
 }
@@ -138,7 +139,7 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
   float Pout = Kp * error;
   integral += error * Ts;
   float Iout = Ki * integral;
-  float derivative = (error - previous_error) / Ts;
+  float derivative = theta_dot;
   float Dout = Kd * derivative;
 
   float output_torque = Pout + Iout + Dout;
@@ -149,9 +150,9 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
 
 // Function to compute PWM from torque
 long int computePWMFromTorque(float torque) {
-  long int pwm_output = ((torque / stallTorque) * 255.0);
+  long int pwm_output = ((torque / stallTorque) * 255.0) + pwm_offset;
   
-
+  // return 40;
   return pwm_output;
 }
 
@@ -159,7 +160,7 @@ void setup() {
   Serial.begin(115200, SERIAL_8N1); 
 
   pinMode(Bin1_pin, OUTPUT);
-  pinMode(Bin2_pin, OUTPUT);
+pinMode(Bin2_pin, OUTPUT);
   pinMode(zeroButtonPin, INPUT_PULLUP);
 
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
@@ -177,6 +178,21 @@ void loop() {
   float desired_torque = PIDControlForAngle(desired_angle, actual_angle);
   
   dutyCycle = computePWMFromTorque(desired_torque);
+
+  Serial.print("a ang:"); Serial.print(actual_angle);
+  Serial.print("d torque (x1000)::"); Serial.print(desired_torque * 1e3);
+  Serial.print(" pwm:"); Serial.print(dutyCycle);
+  Serial.println("\r");
+
+  // Serial.print("position:"); Serial.print(position);
+  // Serial.print(",angle:"); Serial.print(angle_rad * (180 / 3.1416));  // Convert radians to degrees
+  // Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
+  // Serial.print(",torque:"); Serial.print(torque);
+  // Serial.print(",pwm:"); Serial.print(dutyCycle);
+  // Serial.print("Sample Time:"); Serial.print(Ts);
+  // Serial.println("\r");
+
+
   controlMotor(dutyCycle);
   SerialComm();
   delayMicroseconds(100000);
