@@ -5,12 +5,12 @@
 #include <string.h>
 
 // Variables to adjust
-float desired_angle_deg = 45.0;
-float Kp = 1e-5;
-float Kd = 1e-5;
-float Ki = 0.0;
+float desired_angle_deg = 0.0;
+float Kp = 1.6e-3;
+float Kd = 0.001;
+float Ki = 0.0001;
 
-float pwm_offset = 40; // the default PWM to reach 45 degrees
+float pwm_offset = 0.0; // the default PWM to reach 45 degrees
 float max_pwm = 255;
 float corner_freq = 10;
 
@@ -38,8 +38,8 @@ float angle_rad = 0;
 float Ts = 0; 
 float angle_rad_prev = 0;
 float tt_sec = 0;
-float tt_sec_last = 0;
-float theta_dot = 0;
+float tt_sec_last = 0.0;
+float theta_dot = 0.0;
 float error = 0;
 // PID variables for angular position
 float integral = 0;
@@ -47,50 +47,37 @@ float previous_error = 0;
 float desired_angle_rad = desired_angle_deg *(PI/180);
 
 // Function to parse and update PID gains
-void parseAndUpdateGains(const char* input) {
-  float parsedKp, parsedKd, parsedKi;
+// void parseAndUpdateGains(const char* input) {
+//   float parsedKp, parsedKd, parsedKi;
   
-  if (sscanf(input, "[%f,%f,%f]", &parsedKp, &parsedKd, &parsedKi) == 3) {
-    Kp = parsedKp;
-    Kd = parsedKd;
-    Ki = parsedKi;
+//   if (sscanf(input, "[%f,%f,%f]", &parsedKp, &parsedKd, &parsedKi) == 3) {
+//     Kp = parsedKp;
+//     Kd = parsedKd;
+//     Ki = parsedKi;
     
-    Serial.println("Updated PID Gains:");
-    Serial.print("Kp = "); Serial.println(Kp);
-    Serial.print("Kd = "); Serial.println(Kd);
-    Serial.print("Ki = "); Serial.println(Ki);
-  } else {
-    Serial.println("Invalid input format for PID gains. Please use [Kp,Kd,Ki]");
-  }
-}
+//     Serial.println("Updated PID Gains:");
+//     Serial.print("Kp = "); Serial.println(Kp);
+//     Serial.print("Kd = "); Serial.println(Kd);
+//     Serial.print("Ki = "); Serial.println(Ki);
+//   } else {
+//     Serial.println("Invalid input format for PID gains. Please use [Kp,Kd,Ki]");
+//   }
+// }
 
 // Function to handle serial communication, including PID gains input
 long int SerialComm() {
-  myTime2 = millis();
 
   // Serial Plotter Mode with new syntax
   Serial.print(">");
   Serial.print("position:"); Serial.print(position);
-  //Serial.print(",angle:"); Serial.print(angle_rad * (180 / 3.1416));  // Convert radians to degrees
-  // Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
+  Serial.print(",angle:"); Serial.print(angle_rad * (180 / 3.1416));  // Convert radians to degrees
+  Serial.print(",velocity:"); Serial.print(theta_dot * (180 / 3.1416));  // Convert rad/s to deg/s
   // Serial.print(",torque:"); Serial.print(torque);
   Serial.print(",pwm:"); Serial.print(dutyCycle);
-  // Serial.print(",Sample Time:"); Serial.print(Ts);
-  Serial.print(",Error:"); Serial.print(error);
+  //Serial.print(",Sample Time:"); Serial.print(Ts);
+  Serial.print(",Scaling:"); Serial.print(60);
+  //Serial.print(",Error:"); Serial.print(error);
   Serial.println("\r");
-
-  if (Serial.available() != 0) {
-    byte m = Serial.readBytesUntil('\n', myData, 50);
-    myData[m] = '\0';
-
-    if (strchr(myData, '[') && strchr(myData, ']')) {
-      parseAndUpdateGains(myData);
-    } else {
-      long int z = strtol(myData, NULL, 10);
-      memset(myData, 0x00, 50);
-      return z;
-    }
-  }
 
   return dutyCycle;
 }
@@ -158,8 +145,7 @@ float PIDControlForAngle(float desired_angle, float actual_angle) {
 // Function to compute PWM from torque
 long int computePWMFromTorque(float torque) {
   long int pwm_output = ((torque / stallTorque) * 255.0) + pwm_offset;
-  
-  // return 40;
+
   return pwm_output;
 }
 
@@ -203,5 +189,5 @@ void loop() {
 
   controlMotor(dutyCycle);
   SerialComm();
-  delayMicroseconds(10000);
+  delayMicroseconds(100);
 }
