@@ -20,8 +20,8 @@ const float Kd = 0.001;
 const float Ki = 0.0001;
 
 // observer constants
-const float L1 = -3700;
-const float L2 = 13778607.77;
+const float L1 = 3700;
+const float L2 = -13778607.77;
 const float mgl_over_J = m * g * l / J;
 const float b_over_J = b / J;
 
@@ -92,7 +92,8 @@ void loop() {
   angle_rad = 2.0 * 3.1416 * position / counts_per_rot;
 
   // Update sampling time
-  t_curr = millis() / 1000.0; // Convert millis() to seconds
+  t_curr = millis(); 
+  t_curr= t_curr/ 1000.0; // Convert millis() to seconds
   Ts = t_curr - t_prev;
 
   // Precompute coefficients for Implicit Euler
@@ -125,5 +126,5 @@ void loop() {
   SerialComm();
 
   // Small delay for stability
-  delayMicroseconds(1000);
+  delayMicroseconds(50000);
 }
