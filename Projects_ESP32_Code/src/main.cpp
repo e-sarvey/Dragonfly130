@@ -44,7 +44,7 @@ float t_curr = 0.0;
 float t_prev = 0.0;
 float x1_hat_old = 0.0;
 float x2_hat_old = 0.0;
-float input_u = 0.0;
+float control_input_u = 0.0;
 
 void SerialComm() {
   Serial.print(">");
@@ -89,7 +89,7 @@ void loop() {
 
   // solve for new x1_hat state using implicit euler
   x1_hat = (x1_hat_old + Ts * x2_hat + Ts * L1 * angle_rad) / (1 + Ts * L1);
-  x2_hat = (x2_hat_old - Ts * (mgl_over_J + L2) * x1_hat + Ts * L2 * angle_rad + Ts * (1 / J) * U) / (1 + Ts * b_over_J);
+  x2_hat = (x2_hat_old - Ts * (mgl_over_J + L2) * x1_hat + Ts * L2 * angle_rad + Ts * (1 / J) * control_input_u) / (1 + Ts * b_over_J);
 
   theta_dot = (x1_hat - x1_hat_old) / Ts;
 
