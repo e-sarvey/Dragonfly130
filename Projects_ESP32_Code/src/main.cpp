@@ -44,6 +44,7 @@ float t_curr = 0.0;
 float t_prev = 0.0;
 float x1_hat_old = 0.0;
 float x2_hat_old = 0.0;
+float input_u = 0.0;
 
 void SerialComm() {
   Serial.print(">");
@@ -55,7 +56,6 @@ void SerialComm() {
   Serial.println("\r");
 }
 
-// Function to zero the encoder when the button is pressed
 void zeroEncoderButton() {
   if (digitalRead(zeroButtonPin) == LOW) {
     encoder.setCount(0);
@@ -68,10 +68,9 @@ void zeroEncoderButton() {
 void setup() {
   Serial.begin(115200, SERIAL_8N1);
 
-  // setup motor pins
   pinMode(Bin1_pin, OUTPUT);
   pinMode(Bin2_pin, OUTPUT);
-  pinMode(zeroButtonPin, INPUT_PULLUP); // setup reset button
+  pinMode(zeroButtonPin, INPUT_PULLUP);
 
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
   encoder.attachFullQuad(19, 18);
@@ -79,25 +78,19 @@ void setup() {
 }
 
 void loop() {
-  // Zero encoder if button pressed
   zeroEncoderButton();
 
-  // Read encoder and calculate the real angle
   position = (int32_t)encoder.getCount();
   angle_rad = 2.0 * 3.1416 * position / counts_per_rot;
 
-  // Update sampling time
   t_curr = millis();
-  t_curr = t_curr / 1000.0; // Convert millis() to seconds
+  t_curr = t_curr / 1000.0;
   Ts = t_curr - t_prev;
 
-  // Update x1_hat (observer angle estimate) using expanded Implicit Euler equation
+  // solve for new x1_hat state using implicit euler
   x1_hat = (x1_hat_old + Ts * x2_hat + Ts * L1 * angle_rad) / (1 + Ts * L1);
+  x2_hat = (x2_hat_old - Ts * (mgl_over_J + L2) * x1_hat + Ts * L2 * angle_rad + Ts * (1 / J) * U) / (1 + Ts * b_over_J);
 
-  // Update x2_hat (observer auxiliary state) using expanded Implicit Euler equation
-  x2_hat = (x2_hat_old - Ts * (mgl_over_J + L2) * x1_hat + Ts * L2 * angle_rad) / (1 + Ts * b_over_J);
-
-  // Calculate angular velocity estimate (rate of change of angle)
   theta_dot = (x1_hat - x1_hat_old) / Ts;
 
   // Update observer variables for the next iteration
@@ -108,9 +101,6 @@ void loop() {
   // Assign the observer angle to theta for output
   theta = x1_hat;
 
-  // Print observer and raw data to Serial
   SerialComm();
-
-  // Small delay for stability
   delayMicroseconds(50000);
 }
