@@ -10,7 +10,6 @@ const float g = 9.81;
 const float l = 0.0508;
 const float J = 1.8797e-06;
 const float b = 0.007;
-const float stall_torque = 0.004 * (9 / 5);
 const float counts_per_rot = 400;
 
 // Setup PID constants
@@ -24,10 +23,6 @@ const float L1 = 3700;
 const float L2 = -13778607.77;
 const float mgl_over_J = m * g * l / J;
 const float b_over_J = b / J;
-
-const float pwm_offset = 0.0; // the default PWM to reach 45 degrees
-const float max_pwm = 255;
-const float corner_freq = 10; // for filter
 
 // Pin definitions
 const int Bin1_pin = 22;  // motor pin 1
@@ -92,24 +87,15 @@ void loop() {
   angle_rad = 2.0 * 3.1416 * position / counts_per_rot;
 
   // Update sampling time
-  t_curr = millis(); 
-  t_curr= t_curr/ 1000.0; // Convert millis() to seconds
+  t_curr = millis();
+  t_curr = t_curr / 1000.0; // Convert millis() to seconds
   Ts = t_curr - t_prev;
 
-  // Precompute coefficients for Implicit Euler
-  float a11 = 1 + Ts * L1;
-  float a12 = -Ts;
-  float a21 = Ts * (L2 + mgl_over_J);
-  float a22 = 1 + Ts * b_over_J;
+  // Update x1_hat (observer angle estimate) using expanded Implicit Euler equation
+  x1_hat = (x1_hat_old + Ts * x2_hat + Ts * L1 * angle_rad) / (1 + Ts * L1);
 
-  // Right-hand side terms
-  float b1 = x1_hat_old + Ts * (L1 * angle_rad);
-  float b2 = x2_hat_old + Ts * (L2 * angle_rad);
-
-  // Solve for x1_hat and x2_hat using Implicit Euler (2x2 system)
-  float determinant = a11 * a22 - a12 * a21;
-  x1_hat = (b1 * a22 - b2 * a12) / determinant;
-  x2_hat = (b2 * a11 - b1 * a21) / determinant;
+  // Update x2_hat (observer auxiliary state) using expanded Implicit Euler equation
+  x2_hat = (x2_hat_old - Ts * (mgl_over_J + L2) * x1_hat + Ts * L2 * angle_rad) / (1 + Ts * b_over_J);
 
   // Calculate angular velocity estimate (rate of change of angle)
   theta_dot = (x1_hat - x1_hat_old) / Ts;
