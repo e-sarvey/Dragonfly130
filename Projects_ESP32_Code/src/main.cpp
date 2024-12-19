@@ -13,14 +13,15 @@ const float b = 0.007;
 const float counts_per_rot = 400;
 
 // Feedback gains
-const float K1 = 5;
-const float K2 = 0.1;
+const float K1 = 0.001;
+const float K2 = 1;
 
 // Motor parameters
-const float stall_torque = 0.004;       // Nm at 12V
-const float voltage_max = 12.0;         // Max voltage
+const float voltage = 12.0; 
+const float stall_adjust = 0.004;       // Nm at 5V 
+const float stall_torque = stall_adjust*(voltage/5.0);   // Max voltage
 const int pwm_max = 255;                // Max PWM
-const float torque_to_pwm = pwm_max / stall_torque * (5.0 / voltage_max);
+const float torque_to_pwm = pwm_max / stall_torque;
 
 // Pin definitions
 const int Bin1_pin = 22;     // Motor pin 1
@@ -122,7 +123,6 @@ void loop() {
   // Assign observer outputs
   theta = x1_hat;
 
-  // Control input calculation: u = -K1*theta - K2*theta_dot
   control_input_u = -K1 * theta - K2 * theta_dot;
   //control_input_u = 0;
   // Apply control input as PWM to motor
